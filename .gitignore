@@ -1,0 +1,33 @@
+# Entorno virtual
+.venv/
+venv/
+env/
+
+# Caché Python
+_pycache_/
+*.py[cod]
+
+# Logs
+*.log
+app.log
+logs/
+
+# Builds de PyInstaller
+build/
+dist/
+
+# Archivos temporales
+*.tmp
+*.temp
+
+# Variables de entorno
+.env
+.env.*
+
+# IDE
+.vscode/
+.idea/
+
+# Sistema operativo
+Thumbs.db
+.DS_Store

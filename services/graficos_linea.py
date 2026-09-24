@@ -2,7 +2,9 @@ import matplotlib
 matplotlib.use('Agg')  # Backend no-interactivo para PyQt
 
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 import matplotlib.dates as mdates
+from matplotlib.ticker import FuncFormatter
 import pandas as pd
 import numpy as np
 from typing import Optional, List, Dict, Tuple
@@ -51,7 +53,7 @@ def _aplicar_tema(fig, ax, dark_mode: bool = False):
 
 def _formatear_eje_y(ax):
     """Formatea el eje Y con separadores de miles."""
-    ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{x:,.0f}'))
+    ax.yaxis.set_major_formatter(FuncFormatter(lambda x, p: f'{x:,.0f}'))
 
 
 def _formatear_eje_fecha(ax, freq: str = 'auto'):
@@ -154,7 +156,7 @@ def crear_grafico_linea(
     freq: str = 'auto',
     agrupar: str = 'D',
     size: Tuple[int, int] = (10, 5)
-) -> plt.Figure:
+) -> Figure:
     """
     Crea un gráfico de línea temporal profesional.
     
@@ -190,9 +192,8 @@ def crear_grafico_linea(
     if suavizar and len(fechas) > 3:
         x_num = mdates.date2num(fechas)
         x_smooth = np.linspace(x_num.min(), x_num.max(), 300)
-        from scipy.interpolate import make_interp_spline
-        spline = make_interp_spline(x_num, valores, k=3)
-        y_smooth = spline(x_smooth)
+        # Interpolación lineal para evitar depender de SciPy.
+        y_smooth = np.interp(x_smooth, x_num, valores)
         fechas_smooth = mdates.num2date(x_smooth)
         
         if area:
@@ -217,8 +218,10 @@ def crear_grafico_linea(
                        color='white' if dark_mode else '#1e293b')
     
     # Destacar máximo y mínimo
-    max_idx = valores.idxmax()
-    min_idx = valores.idxmin()
+    # Usar índices posicionales para que `.iloc` no dependa del tipo del índice
+    # de la serie (que puede ser entero, texto u otro tipo de etiqueta).
+    max_idx = int(np.argmax(valores.to_numpy()))
+    min_idx = int(np.argmin(valores.to_numpy()))
     
     ax.scatter([fechas.iloc[max_idx]], [valores.iloc[max_idx]], 
               color='#10b981', s=120, zorder=6, edgecolor='white', linewidth=2)
@@ -277,7 +280,7 @@ def crear_grafico_lineas_multiples(
     freq: str = 'auto',
     agrupar: str = 'D',
     size: Tuple[int, int] = (10, 6)
-) -> plt.Figure:
+) -> Figure:
     """
     Crea un gráfico con múltiples líneas para comparar series.
     
@@ -346,7 +349,7 @@ def crear_grafico_barras_temporal(
     agrupar: str = 'M',
     freq: str = 'mensual',
     size: Tuple[int, int] = (10, 5)
-) -> plt.Figure:
+) -> Figure:
     """
     Crea un gráfico de barras agrupado por período temporal.
     """
@@ -366,7 +369,7 @@ def crear_grafico_barras_temporal(
     bars = ax.bar(x, valores, color=color, alpha=0.85, edgecolor='none', width=0.6)
     
     # Destacar barra más alta
-    max_idx = valores.idxmax()
+    max_idx = int(np.argmax(valores.to_numpy()))
     bars[max_idx].set_color('#10b981')
     
     # Valores encima
@@ -410,7 +413,7 @@ def crear_grafico_acumulado(
     paleta: str = 'default',
     freq: str = 'auto',
     size: Tuple[int, int] = (10, 5)
-) -> plt.Figure:
+) -> Figure:
     """
     Crea un gráfico de área acumulada mostrando el crecimiento total.
     """
@@ -474,7 +477,7 @@ def crear_grafico_temporal(
     titulo: str = "Tendencia",
     tipo: str = 'linea',
     **kwargs
-) -> plt.Figure:
+) -> Figure:
     """
     Función maestra para gráficos temporales.
     
@@ -499,7 +502,7 @@ def crear_grafico_temporal(
 # 🧹 LIMPIEZA DE MEMORIA
 # =============================================================================
 
-def cerrar_figura(fig: plt.Figure):
+def cerrar_figura(fig: Figure):
     """Cierra figura para liberar memoria en PyQt."""
     if fig is not None:
         plt.close(fig)
